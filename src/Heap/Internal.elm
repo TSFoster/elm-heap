@@ -1,4 +1,16 @@
-module Heap.Internal exposing (Heap, emptyWith, peek)
+module Heap.Internal
+    exposing
+        ( Heap
+        , empty
+        , emptyWith
+        , singleton
+        , singletonWith
+        , isEmpty
+        , peek
+        , push
+        , pop
+        , mergeInto
+        )
 
 
 type alias Heap a =
@@ -9,8 +21,16 @@ type alias Heap a =
 
 
 type Node a
-    = Branch a
+    = Branch a (List (Node a))
     | Leaf
+
+
+empty : Heap comparable
+empty =
+    { structure = Leaf
+    , size = 0
+    , compareFn = compare
+    }
 
 
 emptyWith : (a -> a -> Order) -> Heap a
@@ -21,11 +41,93 @@ emptyWith fn =
     }
 
 
+isEmpty : Heap a -> Bool
+isEmpty =
+    .structure >> (==) Leaf
+
+
 peek : Heap a -> Maybe a
 peek heap =
     case heap.structure of
         Leaf ->
             Nothing
 
-        Branch x ->
+        Branch x _ ->
             Just x
+
+
+pop : Heap a -> Maybe ( a, Heap a )
+pop heap =
+    case heap.structure of
+        Leaf ->
+            Nothing
+
+        Branch a subheap ->
+            Just ( a, { heap | structure = mergePairs heap subheap, size = heap.size - 1 } )
+
+
+mergePairs : Heap a -> List (Node a) -> Node a
+mergePairs heap nodes =
+    case List.filter ((/=) Leaf) nodes of
+        [] ->
+            Leaf
+
+        node :: [] ->
+            node
+
+        node1 :: node2 :: rest ->
+            .structure <|
+                mergeInto
+                    (mergeInto { heap | structure = node1 } { heap | structure = node2 })
+                    { heap | structure = mergePairs heap rest }
+
+
+singleton : comparable -> Heap comparable
+singleton a =
+    push a empty
+
+
+singletonWith : (a -> a -> Order) -> a -> Heap a
+singletonWith fn a =
+    let
+        heap =
+            emptyWith fn
+    in
+        { heap
+            | structure = Branch a []
+            , size = 1
+        }
+
+
+dummySingleton : a -> Heap a
+dummySingleton =
+    singletonWith (\_ _ -> EQ)
+
+
+push : a -> Heap a -> Heap a
+push a heap =
+    mergeInto heap (dummySingleton a)
+
+
+mergeInto : Heap a -> Heap a -> Heap a
+mergeInto heap toMerge =
+    case heap.structure of
+        Leaf ->
+            { toMerge | compareFn = heap.compareFn }
+
+        Branch elem1 subheap1 ->
+            case toMerge.structure of
+                Leaf ->
+                    heap
+
+                Branch elem2 subheap2 ->
+                    if heap.compareFn elem1 elem2 == LT then
+                        { heap
+                            | structure = Branch elem1 (toMerge.structure :: subheap1)
+                            , size = heap.size + toMerge.size
+                        }
+                    else
+                        { heap
+                            | structure = Branch elem2 (heap.structure :: subheap2)
+                            , size = heap.size + toMerge.size
+                        }
