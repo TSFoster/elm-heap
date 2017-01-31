@@ -2,9 +2,9 @@ module Heap.Internal
     exposing
         ( Heap
         , empty
-        , emptyWith
+        , emptySortedWith
         , singleton
-        , singletonWith
+        , singletonSortedWith
         , isEmpty
         , peek
         , push
@@ -33,8 +33,8 @@ empty =
     }
 
 
-emptyWith : (a -> a -> Order) -> Heap a
-emptyWith fn =
+emptySortedWith : (a -> a -> Order) -> Heap a
+emptySortedWith fn =
     { structure = Leaf
     , size = 0
     , compareFn = fn
@@ -87,11 +87,11 @@ singleton a =
     push a empty
 
 
-singletonWith : (a -> a -> Order) -> a -> Heap a
-singletonWith fn a =
+singletonSortedWith : (a -> a -> Order) -> a -> Heap a
+singletonSortedWith fn a =
     let
         heap =
-            emptyWith fn
+            emptySortedWith fn
     in
         { heap
             | structure = Branch a []
@@ -101,7 +101,7 @@ singletonWith fn a =
 
 dummySingleton : a -> Heap a
 dummySingleton =
-    singletonWith (\_ _ -> EQ)
+    singletonSortedWith (\_ _ -> EQ)
 
 
 push : a -> Heap a -> Heap a

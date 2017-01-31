@@ -2,7 +2,11 @@ module Heap
     exposing
         ( Heap
         , empty
+        , emptySortedWith
+        , emptySortedBy
         , singleton
+        , singletonSortedWith
+        , singletonSortedBy
         , fromList
         , isEmpty
         , peek
@@ -25,9 +29,34 @@ empty =
     Heap I.empty
 
 
+emptySortedWith : (a -> a -> Order) -> Heap a
+emptySortedWith =
+    Heap << I.emptySortedWith
+
+
+emptySortedBy : (a -> comparable) -> Heap a
+emptySortedBy =
+    Heap << I.emptySortedWith << compFn
+
+
 singleton : comparable -> Heap comparable
 singleton a =
     Heap <| I.singleton a
+
+
+singletonSortedWith : (a -> a -> Order) -> a -> Heap a
+singletonSortedWith fn =
+    Heap << I.singletonSortedWith fn
+
+
+singletonSortedBy : (a -> comparable) -> a -> Heap a
+singletonSortedBy fn =
+    Heap << I.singletonSortedWith (compFn fn)
+
+
+compFn : (a -> comparable) -> a -> a -> Order
+compFn fn a b =
+    compare (fn a) (fn b)
 
 
 fromList : List comparable -> Heap comparable

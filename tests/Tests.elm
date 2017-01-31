@@ -37,4 +37,41 @@ all =
                         |> Heap.toList
                         |> Expect.equal (List.sort xs)
             ]
+        , describe "Non-comparable values"
+            [ fuzz (tuple ( list int, list int )) "Can create heaps of non-comparable values with custom compare function" <|
+                \( xs, ys ) ->
+                    let
+                        compareFn a b =
+                            case ( a.list, b.list ) of
+                                ( [], [] ) ->
+                                    EQ
+
+                                ( _, [] ) ->
+                                    GT
+
+                                ( [], _ ) ->
+                                    LT
+
+                                _ ->
+                                    Maybe.map2 compare (List.maximum a.list) (List.maximum b.list)
+                                        |> Maybe.withDefault EQ
+                    in
+                        Heap.emptySortedWith compareFn
+                            |> Heap.push { list = xs }
+                            |> Heap.push { list = ys }
+                            |> Heap.peek
+                            |> Maybe.andThen (.list >> List.maximum)
+                            |> Expect.equal (Maybe.map2 min (List.maximum xs) (List.maximum ys))
+            , fuzz (tuple ( list int, list int )) "Can create heaps of non-comparable values with cutom hashing function" <|
+                \( xs, ys ) ->
+                    let
+                        hashingFn =
+                            .list >> List.sum
+                    in
+                        Heap.singletonSortedBy hashingFn { list = xs }
+                            |> Heap.push { list = ys }
+                            |> Heap.peek
+                            |> Maybe.map (.list >> List.sum)
+                            |> Expect.equal (Just <| min (List.sum xs) (List.sum ys))
+            ]
         ]
