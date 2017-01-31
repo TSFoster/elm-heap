@@ -2,8 +2,22 @@ module Tests exposing (..)
 
 import Test exposing (..)
 import Expect
-import Fuzz exposing (list, int, tuple)
+import Fuzz exposing (Fuzzer, list, int, tuple)
 import Heap exposing (Heap)
+
+
+type BasicUnion
+    = AnInt Int
+
+
+union : Fuzzer BasicUnion
+union =
+    Fuzz.map AnInt int
+
+
+intFromUnion : BasicUnion -> Int
+intFromUnion (AnInt i) =
+    i
 
 
 all : Test
@@ -79,5 +93,11 @@ all =
                             |> Heap.peek
                             |> Maybe.map (.list >> List.sum)
                             |> Expect.equal (Just <| min (List.sum xs) (List.sum ys))
+            , fuzz (tuple ( list union, list union )) "Can merge heaps of non-comparable values" <|
+                \( xs, ys ) ->
+                    List.foldl Heap.push (Heap.emptySortedBy intFromUnion) xs
+                        |> Heap.mergeInto (Heap.fromListSortedBy intFromUnion ys)
+                        |> Heap.toList
+                        |> Expect.equal (List.sortBy intFromUnion (xs ++ ys))
             ]
         ]

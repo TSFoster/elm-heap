@@ -15,6 +15,7 @@ module Heap
         , push
         , pop
         , popBlind
+        , mergeInto
         , toList
         , toListReverse
         )
@@ -99,6 +100,11 @@ pop (Heap h) =
 popBlind : Heap a -> Maybe (Heap a)
 popBlind =
     Maybe.map Tuple.second << pop
+
+
+mergeInto : Heap a -> Heap a -> Heap a
+mergeInto (Heap h1) (Heap h2) =
+    Heap <| I.mergeInto h1 h2
 
 
 toList : Heap a -> List a
