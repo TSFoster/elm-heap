@@ -36,6 +36,12 @@ all =
                     Heap.fromList xs
                         |> Heap.toList
                         |> Expect.equal (List.sort xs)
+            , fuzz (tuple ( list int, list int )) "Can merge two heaps" <|
+                \( xs, ys ) ->
+                    Heap.fromList xs
+                        |> Heap.mergeInto (Heap.fromList ys)
+                        |> Heap.toList
+                        |> Expect.equal (Heap.toList <| Heap.fromList <| xs ++ ys)
             ]
         , describe "Non-comparable values"
             [ fuzz (tuple ( list int, list int )) "Can create heaps of non-comparable values with custom compare function" <|

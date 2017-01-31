@@ -8,6 +8,8 @@ module Heap
         , singletonSortedWith
         , singletonSortedBy
         , fromList
+        , fromListSortedBy
+        , fromListSortedWith
         , isEmpty
         , peek
         , push
@@ -62,6 +64,16 @@ compFn fn a b =
 fromList : List comparable -> Heap comparable
 fromList =
     Heap << List.foldl I.push I.empty
+
+
+fromListSortedBy : (a -> comparable) -> List a -> Heap a
+fromListSortedBy fn =
+    Heap << List.foldl I.push (I.emptySortedWith <| compFn fn)
+
+
+fromListSortedWith : (a -> a -> Order) -> List a -> Heap a
+fromListSortedWith fn =
+    Heap << List.foldl I.push (I.emptySortedWith fn)
 
 
 isEmpty : Heap a -> Bool
