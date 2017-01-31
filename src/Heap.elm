@@ -3,11 +3,14 @@ module Heap
         ( Heap
         , empty
         , singleton
+        , fromList
         , isEmpty
         , peek
         , push
         , pop
         , popBlind
+        , toList
+        , toListReverse
         )
 
 import Heap.Internal as I
@@ -25,6 +28,11 @@ empty =
 singleton : comparable -> Heap comparable
 singleton a =
     Heap <| I.singleton a
+
+
+fromList : List comparable -> Heap comparable
+fromList =
+    Heap << List.foldl I.push I.empty
 
 
 isEmpty : Heap a -> Bool
@@ -50,3 +58,22 @@ pop (Heap h) =
 popBlind : Heap a -> Maybe (Heap a)
 popBlind =
     Maybe.map Tuple.second << pop
+
+
+toList : Heap a -> List a
+toList =
+    List.reverse << toListReverse
+
+
+toListReverse : Heap a -> List a
+toListReverse (Heap h) =
+    let
+        toListHelper popped heap =
+            case I.pop heap of
+                Nothing ->
+                    popped
+
+                Just ( el, subheap ) ->
+                    toListHelper (el :: popped) subheap
+    in
+        toListHelper [] h

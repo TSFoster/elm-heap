@@ -31,5 +31,10 @@ all =
                     List.foldl Heap.push Heap.empty xs
                         |> Heap.peek
                         |> Expect.equal (List.minimum xs)
+            , fuzz (list int) "Can get all inserted elements in order" <|
+                \xs ->
+                    Heap.fromList xs
+                        |> Heap.toList
+                        |> Expect.equal (List.sort xs)
             ]
         ]
