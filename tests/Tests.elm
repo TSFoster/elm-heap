@@ -53,7 +53,7 @@ all =
             , fuzz (tuple ( list int, list int )) "Can merge two heaps" <|
                 \( xs, ys ) ->
                     Heap.fromList xs
-                        |> Heap.mergeInto (Heap.fromList ys)
+                        |> Heap.merge (Heap.fromList ys)
                         |> Heap.toList
                         |> Expect.equal (Heap.toList <| Heap.fromList <| xs ++ ys)
             , describe "Size"
@@ -64,7 +64,7 @@ all =
                             |> Expect.equal 0
                 , fuzz int "Can count size of singleton heap" <|
                     Heap.singleton
-                        >> Heap.mergeInto Heap.empty
+                        >> Heap.merge Heap.empty
                         >> Heap.size
                         >> Expect.equal 1
                 , fuzz (list int) "Can count size of heap" <|
@@ -113,7 +113,7 @@ all =
             , fuzz (tuple ( list union, list union )) "Can merge heaps of non-comparable values" <|
                 \( xs, ys ) ->
                     List.foldl Heap.push (Heap.emptySortedBy intFromUnion) xs
-                        |> Heap.mergeInto (Heap.fromListSortedBy intFromUnion ys)
+                        |> Heap.merge (Heap.fromListSortedBy intFromUnion ys)
                         |> Heap.toList
                         |> Expect.equal (List.sortBy intFromUnion (xs ++ ys))
             ]
