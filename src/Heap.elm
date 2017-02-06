@@ -11,6 +11,7 @@ module Heap
         , fromListSortedBy
         , fromListSortedWith
         , isEmpty
+        , size
         , peek
         , push
         , pop
@@ -80,6 +81,11 @@ fromListSortedWith fn =
 isEmpty : Heap a -> Bool
 isEmpty (Heap h) =
     I.isEmpty h
+
+
+size : Heap a -> Int
+size (Heap h) =
+    h.size
 
 
 peek : Heap a -> Maybe a

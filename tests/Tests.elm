@@ -56,6 +56,23 @@ all =
                         |> Heap.mergeInto (Heap.fromList ys)
                         |> Heap.toList
                         |> Expect.equal (Heap.toList <| Heap.fromList <| xs ++ ys)
+            , describe "Size"
+                [ test "Can count size of empty heap" <|
+                    \() ->
+                        Heap.empty
+                            |> Heap.size
+                            |> Expect.equal 0
+                , fuzz int "Can count size of singleton heap" <|
+                    Heap.singleton
+                        >> Heap.mergeInto Heap.empty
+                        >> Heap.size
+                        >> Expect.equal 1
+                , fuzz (list int) "Can count size of heap" <|
+                    \xs ->
+                        Heap.fromList xs
+                            |> Heap.size
+                            |> Expect.equal (List.length xs)
+                ]
             ]
         , describe "Non-comparable values"
             [ fuzz (tuple ( list int, list int )) "Can create heaps of non-comparable values with custom compare function" <|
