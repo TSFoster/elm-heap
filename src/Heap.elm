@@ -19,6 +19,7 @@ module Heap
         , merge
         , toList
         , toListReverse
+        , compareHeaps
         )
 
 {-| Data structure for heaps.
@@ -47,7 +48,7 @@ been shown to work well in real-world situations.
 
 # Inspecting heaps
 
-@docs isEmpty, size, peek, pop, popBlind
+@docs isEmpty, size, peek, pop, popBlind, compareHeaps
 
 
 # Bulk operations
@@ -261,8 +262,8 @@ If the heap is empty, return Nothing.
     Just 0
 -}
 popBlind : Heap a -> Maybe (Heap a)
-popBlind =
-    Maybe.map Tuple.second << pop
+popBlind (Heap h) =
+    Maybe.map Heap <| I.popBlind h
 
 
 {-| Merge the second heap into the first heap.
@@ -310,3 +311,25 @@ toListReverse (Heap h) =
                     toListHelper (el :: popped) subheap
     in
         toListHelper [] h
+
+
+{-| Compare two heaps (using compare method of first heap):
+
+* An empty heap is less than a non-empty heap.
+* If one heap's min-value is less than another, the heap is less than the other
+* If two heaps share the same min-value, remove the min-values are compare the resulting heaps
+
+
+    >>> Heap.compareHeaps Heap.empty Heap.empty
+    EQ
+
+    >>> Heap.compareHeaps Heap.empty (Heap.singleton 3)
+    LT
+
+    >>> Heap.compareHeaps (Heap.fromList [ 1, 2, 3, 4 ]) (Heap.fromList [ 1, 2, 3 ])
+    GT
+
+-}
+compareHeaps : Heap a -> Heap a -> Order
+compareHeaps (Heap a) (Heap b) =
+    I.compareHeaps a b

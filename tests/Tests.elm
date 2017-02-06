@@ -117,4 +117,36 @@ all =
                         |> Heap.toList
                         |> Expect.equal (List.sortBy intFromUnion (xs ++ ys))
             ]
+        , describe "Comparing Heaps"
+            [ test "Two empty heaps are equal" <|
+                \() ->
+                    Heap.compareHeaps Heap.empty Heap.empty
+                        |> Expect.equal EQ
+            , fuzz (list (tuple ( int, int ))) "Heap with same elements sorted differently are not equal" <|
+                \tuples ->
+                    let
+                        theTuples =
+                            ( -2, 2 ) :: ( -1, 1 ) :: tuples
+
+                        byFirst =
+                            Heap.fromListSortedBy Tuple.first theTuples
+
+                        bySecond =
+                            Heap.fromListSortedBy Tuple.second theTuples
+                    in
+                        Heap.compareHeaps byFirst bySecond
+                            |> Expect.notEqual EQ
+            , fuzz int "(heapA < heapB) <=> (peek heapA < peek heapB)" <|
+                \i ->
+                    Heap.compareHeaps (Heap.singleton i) (Heap.singleton (i + 1))
+                        |> Expect.equal LT
+            , fuzz int "(heapA > heapB) <=> (peek heapA > peek heapB)" <|
+                \i ->
+                    Heap.compareHeaps (Heap.singleton (i + 1)) (Heap.singleton i)
+                        |> Expect.equal GT
+            , fuzz int "An empty heap is less than a non-empty heap" <|
+                \i ->
+                    Heap.compareHeaps Heap.empty (Heap.singleton i)
+                        |> Expect.equal LT
+            ]
         ]

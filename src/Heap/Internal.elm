@@ -7,7 +7,9 @@ module Heap.Internal
         , peek
         , push
         , pop
+        , popBlind
         , mergeInto
+        , compareHeaps
         )
 
 
@@ -54,6 +56,11 @@ pop heap =
 
         Branch a subheap ->
             Just ( a, { heap | structure = mergePairs heap subheap, size = heap.size - 1 } )
+
+
+popBlind : Heap a -> Maybe (Heap a)
+popBlind =
+    Maybe.map Tuple.second << pop
 
 
 mergePairs : Heap a -> List (Node a) -> Node a
@@ -116,3 +123,29 @@ mergeInto heap toMerge =
                             | structure = Branch elem2 (heap.structure :: subheap2)
                             , size = heap.size + toMerge.size
                         }
+
+
+compareHeaps : Heap a -> Heap a -> Order
+compareHeaps heapA heapB =
+    case ( peek heapA, peek heapB ) of
+        ( Nothing, Nothing ) ->
+            EQ
+
+        ( _, Nothing ) ->
+            GT
+
+        ( Nothing, _ ) ->
+            LT
+
+        ( Just a, Just b ) ->
+            let
+                minOrder =
+                    heapA.compareFn a b
+            in
+                case minOrder of
+                    EQ ->
+                        Maybe.map2 compareHeaps (popBlind heapA) (popBlind heapB)
+                            |> Maybe.withDefault EQ
+
+                    _ ->
+                        minOrder
