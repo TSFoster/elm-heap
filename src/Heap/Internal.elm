@@ -1,9 +1,7 @@
 module Heap.Internal
     exposing
         ( Heap
-        , empty
         , emptySortedWith
-        , singleton
         , singletonSortedWith
         , isEmpty
         , peek
@@ -23,14 +21,6 @@ type alias Heap a =
 type Node a
     = Branch a (List (Node a))
     | Leaf
-
-
-empty : Heap comparable
-empty =
-    { structure = Leaf
-    , size = 0
-    , compareFn = compare
-    }
 
 
 emptySortedWith : (a -> a -> Order) -> Heap a
@@ -80,11 +70,6 @@ mergePairs heap nodes =
                 mergeInto
                     (mergeInto { heap | structure = node1 } { heap | structure = node2 })
                     { heap | structure = mergePairs heap rest }
-
-
-singleton : comparable -> Heap comparable
-singleton a =
-    push a empty
 
 
 singletonSortedWith : (a -> a -> Order) -> a -> Heap a

@@ -29,7 +29,7 @@ type Heap a
 
 empty : Heap comparable
 empty =
-    Heap I.empty
+    Heap <| I.emptySortedWith compare
 
 
 emptySortedWith : (a -> a -> Order) -> Heap a
@@ -44,7 +44,7 @@ emptySortedBy =
 
 singleton : comparable -> Heap comparable
 singleton a =
-    Heap <| I.singleton a
+    Heap <| I.singletonSortedWith compare a
 
 
 singletonSortedWith : (a -> a -> Order) -> a -> Heap a
@@ -64,7 +64,7 @@ compFn fn a b =
 
 fromList : List comparable -> Heap comparable
 fromList =
-    Heap << List.foldl I.push I.empty
+    Heap << List.foldl I.push (I.emptySortedWith compare)
 
 
 fromListSortedBy : (a -> comparable) -> List a -> Heap a
