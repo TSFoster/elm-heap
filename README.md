@@ -16,7 +16,7 @@ elm package install TSFoster/elm-heap
 Use the heap:
 
 ```elm
-import Heap
+import Heap exposing (Heap, smallest, biggest, by, thenBy)
 
 type alias Person =
     { firstname : String
@@ -25,19 +25,11 @@ type alias Person =
     }
 
 init : Heap Person
-init = Heap.emptySortedBy .surname
+init = Heap.empty (smallest |> by .surname)
 
 defaultPeople : Heap Person
 defaultPeople =
-    Heap.fromListSortedWith
-        (\person1 person2 ->
-            if person1.surname /= person2.surname then
-                compare person1.surname person2.surname
-            else if person1.firstname /= person2.firstname then
-                compare person1.firstname person2.firstname
-            else
-                compare person1.age person2.age
-        )
+    Heap.fromList (biggest |> by .surname |> thenBy .firstName |> thenBy .age)
         [ { firstname = "Anders", surname = "And", age = 83 }
         , { firstname = "Bruce", surname = "Bogtrotter", age = 8 }
         , { firstname = "Charlie", surname = "Chaplin", age = 88 }
