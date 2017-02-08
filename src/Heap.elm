@@ -1,25 +1,26 @@
 module Heap
     exposing
         ( Heap
+        , Compare(..)
+        , Options
+        , defaultOptions
         , empty
-        , emptySortedWith
-        , emptySortedBy
+        , emptyWith
         , singleton
-        , singletonSortedWith
-        , singletonSortedBy
+        , singletonWith
         , fromList
-        , fromListSortedBy
-        , fromListSortedWith
+        , fromListWith
         , isEmpty
         , size
         , peek
         , push
         , pop
         , popBlind
-        , merge
+        , mergeInto
         , toList
         , toListReverse
-        , compareHeaps
+        , toListUnordered
+        , compare
         )
 
 {-| Data structure for heaps.
@@ -33,33 +34,27 @@ been shown to work well in real-world situations.
 
 # Definition
 
-@docs Heap
+@docs Heap, Options, Compare, defaultOptions
 
 
 # Creating heaps
 
-@docs empty, singleton, isEmpty
+@docs empty, emptyWith, singleton, singletonWith
 
 
-# Inserting values
+# Inserting/removing values
 
-@docs push, merge
+@docs push, pop, popBlind
 
 
 # Inspecting heaps
 
-@docs isEmpty, size, peek, pop, popBlind, compareHeaps
+@docs isEmpty, size, peek, compare
 
 
 # Bulk operations
 
-@docs fromList, toList, toListReverse
-
-
-# Non-comparable elements
-
-@docs emptySortedBy, singletonSortedBy, emptySortedWith
-@docs singletonSortedWith, fromListSortedBy, fromListSortedWith
+@docs mergeInto, fromList, fromListWith, toList, toListReverse, toListUnordered
 
 
 # Running times
@@ -72,110 +67,137 @@ been shown to work well in real-world situations.
 
 -}
 
-import Heap.Internal as I
-
 
 {-| Heaps are exposed as an opaque union type.
+
 -}
 type Heap a
-    = Heap (I.Heap a)
+    = Heap (Model a)
+
+
+type alias Model a =
+    { structure : Node a
+    , size : Int
+    , compare : a -> a -> Order
+    }
+
+
+type Node a
+    = Branch a (List (Node a))
+    | Leaf
+
+
+{-| You must provide  either a function to compare two values,  or a function to
+make a value `comparable`.
+
+-}
+type Compare a comparable
+    = With (a -> a -> Order)
+    | By (a -> comparable)
+
+
+{-| A record defining the type of heap to create.
+
+-}
+type alias Options a comparable =
+    { compare : Compare a comparable
+    }
+
+
+{-| By default,  heaps contain comparable values (ints,  floats, chars, strings,
+lists, or tuples).
+
+
+-}
+defaultOptions : Options comparable1 comparable2
+defaultOptions =
+    { compare = With Basics.compare
+    }
 
 
 {-| An empty heap for any  comparable type (ints, floats, chars, strings, lists,
 or tuples).
+
+Same as `Heap.emptyWith Heap.defaultOptions`.
+
 -}
 empty : Heap comparable
 empty =
-    Heap <| I.emptySortedWith compare
+    emptyWith defaultOptions
 
 
-{-| An empty heap for any type, given a function to compare values.
 
-    Heap.emptySortedWith (\a b -> compare (List.maximum a) (List.maximum b))
+    Heap.emptyWith { order = MinFirst, compare = (\a b -> Basics.compare (List.maximum a) (List.maximum b)) }
+{-| An empty heap for any type, given an Options record.
+
 -}
-emptySortedWith : (a -> a -> Order) -> Heap a
-emptySortedWith =
-    Heap << I.emptySortedWith
-
-
-{-| An empty heap for any type, given a function to make a comprable value.
-
-    Heap.emptySortedBy .surname
--}
-emptySortedBy : (a -> comparable) -> Heap a
-emptySortedBy =
-    Heap << I.emptySortedWith << compFn
+emptyWith : Options a comparable -> Heap a
+emptyWith { compare } =
+    Heap
+        { structure = Leaf
+        , size = 0
+        , compare = makeCompare compare
+        }
 
 
 {-| A heap containing one comparable value (ints, floats, chars, strings, lists,
 or tuples).
 
     Heap.singleton (3, 4)
+
+Same as `Heap.singletonWith Heap.defaultOptions`.
+
 -}
 singleton : comparable -> Heap comparable
-singleton a =
-    Heap <| I.singletonSortedWith compare a
+singleton =
+    singletonWith defaultOptions
 
 
-{-| A heap containing one value, given a function to compare values.
+{-| A heap containing one value, given Heap.Options
 
-    Heap.SingletonSortedWith [ 1, 2, 3, 56 ]
+    Heap.SingletonWith
+        { compare = By .age }
+        { name = "Cher", age = 12 }
+
 -}
-singletonSortedWith : (a -> a -> Order) -> a -> Heap a
-singletonSortedWith fn =
-    Heap << I.singletonSortedWith fn
-
-
-{-| A heap containing one value, given a function to make a comparable value.
-
-    Heap.singletonSortedBy .surname { firstname = "Buzz", surname = "Aldrin" }
--}
-singletonSortedBy : (a -> comparable) -> a -> Heap a
-singletonSortedBy fn =
-    Heap << I.singletonSortedWith (compFn fn)
-
-
-compFn : (a -> comparable) -> a -> a -> Order
-compFn fn a b =
-    compare (fn a) (fn b)
+singletonWith : Options a comparable -> a -> Heap a
+singletonWith { compare } value =
+    Heap
+        { structure = Branch value []
+        , size = 1
+        , compare = makeCompare compare
+        }
 
 
 {-| A heap containing all values in the list of comparable types.
 
-    Heap.fromList []
+    >>> Heap.fromList []
+    ...    |> Heap.size
+    0
 
-    Heap.fromList [ 8, 3, 8, 3, 6, 67, 23 ]
+    >>> Heap.fromList [ 8, 3, 8, 3, 6, 67, 23 ]
+    ...    |> Heap.size
+    7
+
+Same as `Heap.fromListWith Heap.defaultOptions`.
+
 -}
 fromList : List comparable -> Heap comparable
 fromList =
-    Heap << List.foldl I.push (I.emptySortedWith compare)
+    fromListWith defaultOptions
 
 
-{-| A heap  containing all  values in  the list,  given a  function to  compare
-values.
+{-| A heap containing all values in the list, given Heap.Options
 
-    Heap.fromListSortedWith (\a b -> compare (List.maximum a) (List.maximum b))
+    Heap.fromListWith { compare = By List.minimum }
         [ [ 1, 999 ]
         , [ 6, 4, 3, 8, 9, 347, 34, 132, 546 ]
         ]
+
 -}
-fromListSortedWith : (a -> a -> Order) -> List a -> Heap a
-fromListSortedWith fn =
-    Heap << List.foldl I.push (I.emptySortedWith fn)
-
-
-{-| A heap  containing all  values in  the  list, given  a function  to make  a
-comparable value.
-
-    Heap.fromListSortedBy .surname
-        [ { firstname = "Buzz", surname = "Aldrin" }
-        , { firstname = "Norman", surname = "Bates" }
-        , { firstname = "Bruce", surname = "Campbell" }
-        ]
--}
-fromListSortedBy : (a -> comparable) -> List a -> Heap a
-fromListSortedBy fn =
-    Heap << List.foldl I.push (I.emptySortedWith <| compFn fn)
+fromListWith : Options a comparable -> List a -> Heap a
+fromListWith options =
+    List.foldl push (emptyWith options)
 
 
 {-| `True` if the Heap is empty, otherwise `False`.
@@ -185,10 +207,11 @@ fromListSortedBy fn =
 
     >>> Heap.isEmpty (Heap.singleton 3)
     False
+
 -}
 isEmpty : Heap a -> Bool
-isEmpty (Heap h) =
-    I.isEmpty h
+isEmpty (Heap { size }) =
+    size == 0
 
 
 {-| Number of elements in heap.
@@ -198,6 +221,7 @@ isEmpty (Heap h) =
 
     >>> Heap.size (Heap.fromList [ 1, 2, 3, 4, 5, 6, 7, 8 ])
     8
+
 -}
 size : Heap a -> Int
 size (Heap h) =
@@ -211,10 +235,16 @@ size (Heap h) =
 
     >>> Heap.peek (Heap.fromList [ 3, 56, 8, 367, 0, 4 ])
     Just 0
+
 -}
 peek : Heap a -> Maybe a
-peek (Heap h) =
-    I.peek h
+peek (Heap { structure }) =
+    case structure of
+        Leaf ->
+            Nothing
+
+        Branch a _ ->
+            Just a
 
 
 {-| Add a value to a heap.
@@ -228,10 +258,11 @@ peek (Heap h) =
     ...     |> Heap.push 4
     ...     |> Heap.peek
     Just 4
+
 -}
 push : a -> Heap a -> Heap a
-push a (Heap h) =
-    Heap <| I.push a h
+push a (Heap heap) =
+    mergeInto (Heap heap) (Heap { heap | structure = Branch a [], size = 1 })
 
 
 {-| Try to remove the smallest value  from the heap, returning the value and the
@@ -244,10 +275,16 @@ new heap. If the heap is empty, return Nothing.
     ...     |> Heap.pop
     ...     |> Maybe.map (Tuple.mapSecond Heap.size)
     Just (2, 5)
+
 -}
 pop : Heap a -> Maybe ( a, Heap a )
-pop (Heap h) =
-    Maybe.map (Tuple.mapSecond Heap) <| I.pop h
+pop (Heap heap) =
+    case heap.structure of
+        Leaf ->
+            Nothing
+
+        Branch a subheap ->
+            Just ( a, Heap { heap | structure = mergePairs heap subheap, size = heap.size - 1 } )
 
 
 {-| Try to remove the smallest value from the heap, returning just the new heap.
@@ -260,10 +297,11 @@ If the heap is empty, return Nothing.
     ...     |> Heap.popBlind
     ...     |> Maybe.map Heap.size
     Just 0
+
 -}
 popBlind : Heap a -> Maybe (Heap a)
-popBlind (Heap h) =
-    Maybe.map Heap <| I.popBlind h
+popBlind =
+    Maybe.map Tuple.second << pop
 
 
 {-| Merge the second heap into the first heap.
@@ -272,22 +310,47 @@ popBlind (Heap h) =
 Strictly speaking,  the merged  heap has  the same sorting  method as  the first
 argument.
 
-    >>> Heap.isEmpty (Heap.merge Heap.empty Heap.empty)
+    >>> Heap.isEmpty (Heap.mergeInto Heap.empty Heap.empty)
     True
 
-    >>> Heap.merge (Heap.fromList [ 2, 4, 6, 7 ]) (Heap.fromList [ 5, 7, 9, 3 ])
+    >>> Heap.mergeInto (Heap.fromList [ 2, 4, 6, 7 ]) (Heap.fromList [ 5, 7, 9, 3 ])
     ...     |> Heap.size
     8
+
 -}
-merge : Heap a -> Heap a -> Heap a
-merge (Heap h1) (Heap h2) =
-    Heap <| I.mergeInto h1 h2
+mergeInto : Heap a -> Heap a -> Heap a
+mergeInto (Heap heap) (Heap toMerge) =
+    Heap <|
+        case heap.structure of
+            Leaf ->
+                { heap
+                    | structure = toMerge.structure
+                    , size = toMerge.size
+                }
+
+            Branch elem1 subheap1 ->
+                case toMerge.structure of
+                    Leaf ->
+                        heap
+
+                    Branch elem2 subheap2 ->
+                        if heap.compare elem1 elem2 == LT then
+                            { heap
+                                | structure = Branch elem1 (toMerge.structure :: subheap1)
+                                , size = heap.size + toMerge.size
+                            }
+                        else
+                            { heap
+                                | structure = Branch elem2 (heap.structure :: subheap2)
+                                , size = heap.size + toMerge.size
+                            }
 
 
 {-| Get all values from the heap, in order.
 
     >>> Heap.toList (Heap.fromList [ 9, 3, 6, 4, 1, 2, 8, 5, 7 ])
     [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+
 -}
 toList : Heap a -> List a
 toList =
@@ -300,17 +363,35 @@ toList =
     [ 9, 8, 7, 6, 5, 4, 3, 2, 1 ]
 -}
 toListReverse : Heap a -> List a
-toListReverse (Heap h) =
+toListReverse =
     let
         toListHelper popped heap =
-            case I.pop heap of
+            case pop heap of
                 Nothing ->
                     popped
 
                 Just ( el, subheap ) ->
                     toListHelper (el :: popped) subheap
     in
-        toListHelper [] h
+        toListHelper []
+
+
+{-| Get all values out as fast as possible, regardless of order
+
+-}
+toListUnordered : Heap a -> List a
+toListUnordered (Heap { structure }) =
+    flattenStructure structure
+
+
+flattenStructure : Node a -> List a
+flattenStructure nodes =
+    case nodes of
+        Leaf ->
+            []
+
+        Branch a rest ->
+            a :: List.concat (List.map flattenStructure rest)
 
 
 {-| Compare two heaps (using compare method of first heap):
@@ -320,16 +401,83 @@ toListReverse (Heap h) =
 * If two heaps share the same min-value, remove the min-values are compare the resulting heaps
 
 
-    >>> Heap.compareHeaps Heap.empty Heap.empty
+    >>> Heap.compare Heap.empty Heap.empty
     EQ
 
-    >>> Heap.compareHeaps Heap.empty (Heap.singleton 3)
+    >>> Heap.compare Heap.empty (Heap.singleton 3)
     LT
 
-    >>> Heap.compareHeaps (Heap.fromList [ 1, 2, 3, 4 ]) (Heap.fromList [ 1, 2, 3 ])
+    >>> Heap.compare (Heap.fromList [ 1, 2, 3, 4 ]) (Heap.fromList [ 1, 2, 3 ])
     GT
 
 -}
-compareHeaps : Heap a -> Heap a -> Order
-compareHeaps (Heap a) (Heap b) =
-    I.compareHeaps a b
+compare : Heap a -> Heap a -> Order
+compare ((Heap ha) as heapA) ((Heap hb) as heapB) =
+    case ( peek heapA, peek heapB ) of
+        ( Nothing, Nothing ) ->
+            EQ
+
+        ( _, Nothing ) ->
+            GT
+
+        ( Nothing, _ ) ->
+            LT
+
+        ( Just a, Just b ) ->
+            let
+                minOrder =
+                    ha.compare a b
+            in
+                case minOrder of
+                    EQ ->
+                        Maybe.map2 compare (popBlind heapA) (popBlind heapB)
+                            |> Maybe.withDefault EQ
+
+                    _ ->
+                        minOrder
+
+
+makeCompare : Compare a comparable -> a -> a -> Order
+makeCompare compare =
+    let
+        fn a b =
+            case compare of
+                With f ->
+                    f a b
+
+                By f ->
+                    Basics.compare (f a) (f b)
+    in
+        fn
+
+
+reverseCompare : (a -> a -> Order) -> (a -> a -> Order)
+reverseCompare fn a b =
+    case fn a b of
+        GT ->
+            LT
+
+        LT ->
+            GT
+
+        EQ ->
+            EQ
+
+
+mergePairs : Model a -> List (Node a) -> Node a
+mergePairs heap nodes =
+    case List.filter ((/=) Leaf) nodes of
+        [] ->
+            Leaf
+
+        node :: [] ->
+            node
+
+        node1 :: node2 :: rest ->
+            let
+                (Heap { structure }) =
+                    mergeInto
+                        (mergeInto (Heap { heap | structure = node1 }) (Heap { heap | structure = node2 }))
+                        (Heap { heap | structure = mergePairs heap rest })
+            in
+                structure

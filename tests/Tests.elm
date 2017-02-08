@@ -3,7 +3,7 @@ module Tests exposing (..)
 import Test exposing (..)
 import Expect
 import Fuzz exposing (Fuzzer, list, int, tuple)
-import Heap exposing (Heap)
+import Heap exposing (Heap, Compare(..))
 
 
 type BasicUnion
@@ -53,7 +53,7 @@ all =
             , fuzz (tuple ( list int, list int )) "Can merge two heaps" <|
                 \( xs, ys ) ->
                     Heap.fromList xs
-                        |> Heap.merge (Heap.fromList ys)
+                        |> Heap.mergeInto (Heap.fromList ys)
                         |> Heap.toList
                         |> Expect.equal (Heap.toList <| Heap.fromList <| xs ++ ys)
             , describe "Size"
@@ -64,7 +64,7 @@ all =
                             |> Expect.equal 0
                 , fuzz int "Can count size of singleton heap" <|
                     Heap.singleton
-                        >> Heap.merge Heap.empty
+                        >> Heap.mergeInto Heap.empty
                         >> Heap.size
                         >> Expect.equal 1
                 , fuzz (list int) "Can count size of heap" <|
@@ -78,7 +78,7 @@ all =
             [ fuzz (tuple ( list int, list int )) "Can create heaps of non-comparable values with custom compare function" <|
                 \( xs, ys ) ->
                     let
-                        compareFn a b =
+                        compare a b =
                             case ( a.list, b.list ) of
                                 ( [], [] ) ->
                                     EQ
@@ -90,10 +90,10 @@ all =
                                     LT
 
                                 _ ->
-                                    Maybe.map2 compare (List.maximum a.list) (List.maximum b.list)
+                                    Maybe.map2 Basics.compare (List.maximum a.list) (List.maximum b.list)
                                         |> Maybe.withDefault EQ
                     in
-                        Heap.emptySortedWith compareFn
+                        Heap.emptyWith { compare = With compare }
                             |> Heap.push { list = xs }
                             |> Heap.push { list = ys }
                             |> Heap.peek
@@ -105,22 +105,22 @@ all =
                         hashingFn =
                             .list >> List.sum
                     in
-                        Heap.singletonSortedBy hashingFn { list = xs }
+                        Heap.singletonWith { compare = By hashingFn } { list = xs }
                             |> Heap.push { list = ys }
                             |> Heap.peek
                             |> Maybe.map (.list >> List.sum)
                             |> Expect.equal (Just <| min (List.sum xs) (List.sum ys))
             , fuzz (tuple ( list union, list union )) "Can merge heaps of non-comparable values" <|
                 \( xs, ys ) ->
-                    List.foldl Heap.push (Heap.emptySortedBy intFromUnion) xs
-                        |> Heap.merge (Heap.fromListSortedBy intFromUnion ys)
+                    List.foldl Heap.push (Heap.emptyWith { compare = By intFromUnion }) xs
+                        |> Heap.mergeInto (Heap.fromListWith { compare = By intFromUnion } ys)
                         |> Heap.toList
                         |> Expect.equal (List.sortBy intFromUnion (xs ++ ys))
             ]
         , describe "Comparing Heaps"
             [ test "Two empty heaps are equal" <|
                 \() ->
-                    Heap.compareHeaps Heap.empty Heap.empty
+                    Heap.compare Heap.empty Heap.empty
                         |> Expect.equal EQ
             , fuzz (list (tuple ( int, int ))) "Heap with same elements sorted differently are not equal" <|
                 \tuples ->
@@ -129,24 +129,24 @@ all =
                             ( -2, 2 ) :: ( -1, 1 ) :: tuples
 
                         byFirst =
-                            Heap.fromListSortedBy Tuple.first theTuples
+                            Heap.fromListWith { compare = By Tuple.first } theTuples
 
                         bySecond =
-                            Heap.fromListSortedBy Tuple.second theTuples
+                            Heap.fromListWith { compare = By Tuple.second } theTuples
                     in
-                        Heap.compareHeaps byFirst bySecond
+                        Heap.compare byFirst bySecond
                             |> Expect.notEqual EQ
             , fuzz int "(heapA < heapB) <=> (peek heapA < peek heapB)" <|
                 \i ->
-                    Heap.compareHeaps (Heap.singleton i) (Heap.singleton (i + 1))
+                    Heap.compare (Heap.singleton i) (Heap.singleton (i + 1))
                         |> Expect.equal LT
             , fuzz int "(heapA > heapB) <=> (peek heapA > peek heapB)" <|
                 \i ->
-                    Heap.compareHeaps (Heap.singleton (i + 1)) (Heap.singleton i)
+                    Heap.compare (Heap.singleton (i + 1)) (Heap.singleton i)
                         |> Expect.equal GT
             , fuzz int "An empty heap is less than a non-empty heap" <|
                 \i ->
-                    Heap.compareHeaps Heap.empty (Heap.singleton i)
+                    Heap.compare Heap.empty (Heap.singleton i)
                         |> Expect.equal LT
             ]
         ]
