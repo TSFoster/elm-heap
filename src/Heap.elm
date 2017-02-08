@@ -1,6 +1,7 @@
 module Heap
     exposing
         ( Heap
+        , SortOrder(..)
         , Compare(..)
         , Options
         , defaultOptions
@@ -34,7 +35,7 @@ been shown to work well in real-world situations.
 
 # Definition
 
-@docs Heap, Options, Compare, defaultOptions
+@docs Heap, Options, SortOrder, Compare, defaultOptions
 
 
 # Creating heaps
@@ -78,13 +79,23 @@ type Heap a
 type alias Model a =
     { structure : Node a
     , size : Int
-    , compare : a -> a -> Order
+    , compare : SortOrder -> a -> a -> Order
+    , order : SortOrder
     }
 
 
 type Node a
     = Branch a (List (Node a))
     | Leaf
+
+
+{-| Heaps keep  either the smallest value  at the top (MinFirst)  or the largest
+(MaxFirst).
+
+-}
+type SortOrder
+    = MinFirst
+    | MaxFirst
 
 
 {-| You must provide  either a function to compare two values,  or a function to
@@ -100,18 +111,20 @@ type Compare a comparable
 
 -}
 type alias Options a comparable =
-    { compare : Compare a comparable
+    { order : SortOrder
+    , compare : Compare a comparable
     }
 
 
-{-| By default,  heaps contain comparable values (ints,  floats, chars, strings,
-lists, or tuples).
+{-| By default,  heaps  are  min-heaps that  contain  comparable values  (ints,
+floats, chars, strings, lists, or tuples).
 
 
 -}
 defaultOptions : Options comparable1 comparable2
 defaultOptions =
-    { compare = With Basics.compare
+    { order = MinFirst
+    , compare = With Basics.compare
     }
 
 
@@ -132,11 +145,12 @@ empty =
 
 -}
 emptyWith : Options a comparable -> Heap a
-emptyWith { compare } =
+emptyWith { compare, order } =
     Heap
         { structure = Leaf
         , size = 0
         , compare = makeCompare compare
+        , order = order
         }
 
 
@@ -156,16 +170,17 @@ singleton =
 {-| A heap containing one value, given Heap.Options
 
     Heap.SingletonWith
-        { compare = By .age }
+        { order = MinFirst, compare = By .age }
         { name = "Cher", age = 12 }
 
 -}
 singletonWith : Options a comparable -> a -> Heap a
-singletonWith { compare } value =
+singletonWith { compare, order } value =
     Heap
         { structure = Branch value []
         , size = 1
         , compare = makeCompare compare
+        , order = order
         }
 
 
@@ -189,7 +204,7 @@ fromList =
 
 {-| A heap containing all values in the list, given Heap.Options
 
-    Heap.fromListWith { compare = By List.minimum }
+    Heap.fromListWith { order = MaxFirst, compare = By List.minimum }
         [ [ 1, 999 ]
         , [ 6, 4, 3, 8, 9, 347, 34, 132, 546 ]
         ]
@@ -334,7 +349,7 @@ mergeInto (Heap heap) (Heap toMerge) =
                         heap
 
                     Branch elem2 subheap2 ->
-                        if heap.compare elem1 elem2 == LT then
+                        if heap.compare heap.order elem1 elem2 == LT then
                             { heap
                                 | structure = Branch elem1 (toMerge.structure :: subheap1)
                                 , size = heap.size + toMerge.size
@@ -426,7 +441,7 @@ compare ((Heap ha) as heapA) ((Heap hb) as heapB) =
         ( Just a, Just b ) ->
             let
                 minOrder =
-                    ha.compare a b
+                    ha.compare ha.order a b
             in
                 case minOrder of
                     EQ ->
@@ -437,8 +452,8 @@ compare ((Heap ha) as heapA) ((Heap hb) as heapB) =
                         minOrder
 
 
-makeCompare : Compare a comparable -> a -> a -> Order
-makeCompare compare =
+makeCompare : Compare a comparable -> SortOrder -> a -> a -> Order
+makeCompare compare order =
     let
         fn a b =
             case compare of
@@ -448,7 +463,12 @@ makeCompare compare =
                 By f ->
                     Basics.compare (f a) (f b)
     in
-        fn
+        case order of
+            MinFirst ->
+                fn
+
+            MaxFirst ->
+                reverseCompare fn
 
 
 reverseCompare : (a -> a -> Order) -> (a -> a -> Order)

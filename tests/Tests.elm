@@ -3,7 +3,7 @@ module Tests exposing (..)
 import Test exposing (..)
 import Expect
 import Fuzz exposing (Fuzzer, list, int, tuple)
-import Heap exposing (Heap, Compare(..))
+import Heap exposing (Heap, SortOrder(..), Compare(..))
 
 
 type BasicUnion
@@ -93,7 +93,7 @@ all =
                                     Maybe.map2 Basics.compare (List.maximum a.list) (List.maximum b.list)
                                         |> Maybe.withDefault EQ
                     in
-                        Heap.emptyWith { compare = With compare }
+                        Heap.emptyWith { order = MinFirst, compare = With compare }
                             |> Heap.push { list = xs }
                             |> Heap.push { list = ys }
                             |> Heap.peek
@@ -105,15 +105,15 @@ all =
                         hashingFn =
                             .list >> List.sum
                     in
-                        Heap.singletonWith { compare = By hashingFn } { list = xs }
+                        Heap.singletonWith { order = MinFirst, compare = By hashingFn } { list = xs }
                             |> Heap.push { list = ys }
                             |> Heap.peek
                             |> Maybe.map (.list >> List.sum)
                             |> Expect.equal (Just <| min (List.sum xs) (List.sum ys))
             , fuzz (tuple ( list union, list union )) "Can merge heaps of non-comparable values" <|
                 \( xs, ys ) ->
-                    List.foldl Heap.push (Heap.emptyWith { compare = By intFromUnion }) xs
-                        |> Heap.mergeInto (Heap.fromListWith { compare = By intFromUnion } ys)
+                    List.foldl Heap.push (Heap.emptyWith { order = MinFirst, compare = By intFromUnion }) xs
+                        |> Heap.mergeInto (Heap.fromListWith { order = MinFirst, compare = By intFromUnion } ys)
                         |> Heap.toList
                         |> Expect.equal (List.sortBy intFromUnion (xs ++ ys))
             ]
@@ -129,10 +129,10 @@ all =
                             ( -2, 2 ) :: ( -1, 1 ) :: tuples
 
                         byFirst =
-                            Heap.fromListWith { compare = By Tuple.first } theTuples
+                            Heap.fromListWith { order = MinFirst, compare = By Tuple.first } theTuples
 
                         bySecond =
-                            Heap.fromListWith { compare = By Tuple.second } theTuples
+                            Heap.fromListWith { order = MinFirst, compare = By Tuple.second } theTuples
                     in
                         Heap.compare byFirst bySecond
                             |> Expect.notEqual EQ
@@ -148,5 +148,17 @@ all =
                 \i ->
                     Heap.compare Heap.empty (Heap.singleton i)
                         |> Expect.equal LT
+            ]
+        , describe "Max heaps"
+            [ fuzz (list int) "Max heaps produce the reverse of Min heaps" <|
+                \ints ->
+                    Heap.fromListWith { order = MaxFirst, compare = With Basics.compare } ints
+                        |> Heap.toListReverse
+                        |> Expect.equal (Heap.fromList ints |> Heap.toList)
+            , fuzz (list int) "Max heaps have biggest value first" <|
+                \ints ->
+                    Heap.fromListWith { order = MaxFirst, compare = With Basics.compare } ints
+                        |> Heap.peek
+                        |> Expect.equal (List.maximum ints)
             ]
         ]
