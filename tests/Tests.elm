@@ -115,38 +115,6 @@ all =
                             |> Heap.toList
                             |> Expect.equal (List.sortBy intFromUnion (xs ++ ys))
             ]
-        , describe "Comparing Heaps"
-            [ test "Two empty heaps are equal" <|
-                \() ->
-                    Heap.compare (Heap.empty smallest) (Heap.empty smallest)
-                        |> Expect.equal EQ
-            , fuzz (list (tuple ( int, int ))) "Heap with same elements sorted differently are not equal" <|
-                \tuples ->
-                    let
-                        theTuples =
-                            ( -2, 2 ) :: ( -1, 1 ) :: tuples
-
-                        byFirst =
-                            Heap.fromList (smallest |> by Tuple.first) theTuples
-
-                        bySecond =
-                            Heap.fromList (smallest |> by Tuple.second) theTuples
-                    in
-                        Heap.compare byFirst bySecond
-                            |> Expect.notEqual EQ
-            , fuzz int "(heapA < heapB) <=> (peek heapA < peek heapB)" <|
-                \i ->
-                    Heap.compare (Heap.singleton smallest i) (Heap.singleton smallest (i + 1))
-                        |> Expect.equal LT
-            , fuzz int "(heapA > heapB) <=> (peek heapA > peek heapB)" <|
-                \i ->
-                    Heap.compare (Heap.singleton smallest (i + 1)) (Heap.singleton smallest i)
-                        |> Expect.equal GT
-            , fuzz int "An empty heap is less than a non-empty heap" <|
-                \i ->
-                    Heap.compare (Heap.empty smallest) (Heap.singleton smallest i)
-                        |> Expect.equal LT
-            ]
         , describe "Max heaps"
             [ fuzz (list int) "Max heaps produce the reverse of Min heaps" <|
                 \ints ->

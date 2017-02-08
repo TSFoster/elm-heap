@@ -19,7 +19,6 @@ module Heap
         , toList
         , toListReverse
         , toListUnordered
-        , compare
         )
 
 {-| Data structure for heaps.
@@ -48,7 +47,7 @@ been shown to work well in real-world situations.
 
 # Inspecting heaps
 
-@docs isEmpty, size, peek, compare
+@docs isEmpty, size, peek
 
 
 # Converting to lists
@@ -438,49 +437,6 @@ flattenStructure nodes =
 
         Branch a rest ->
             a :: List.concat (List.map flattenStructure rest)
-
-
-{-| Compare two heaps (using compare method of first heap):
-
-* An empty heap is less than a non-empty heap.
-* If one heap's min-value is less than another, the heap is less than the other
-* If two heaps share the same min-value, remove the min-values are compare the resulting heaps
-
-
-    >>> Heap.compare (Heap.empty smallest) (Heap.empty smallest)
-    EQ
-
-    >>> Heap.compare (Heap.empty smallest) (Heap.singleton smallest 3)
-    LT
-
-    >>> Heap.compare (Heap.fromList smallest [ 1, 2, 3, 4 ]) (Heap.fromList smallest [ 1, 2, 3 ])
-    GT
-
--}
-compare : Heap a -> Heap a -> Order
-compare ((Heap ha) as heapA) ((Heap hb) as heapB) =
-    case ( peek heapA, peek heapB ) of
-        ( Nothing, Nothing ) ->
-            EQ
-
-        ( _, Nothing ) ->
-            GT
-
-        ( Nothing, _ ) ->
-            LT
-
-        ( Just a, Just b ) ->
-            let
-                minOrder =
-                    ha.compare ha.order a b
-            in
-                case minOrder of
-                    EQ ->
-                        Maybe.map2 compare (popBlind heapA) (popBlind heapB)
-                            |> Maybe.withDefault EQ
-
-                    _ ->
-                        minOrder
 
 
 mergePairs : Model a -> List (Node a) -> Node a
