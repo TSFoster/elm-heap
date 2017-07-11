@@ -6,6 +6,7 @@ module Heap
         , biggest
         , by
         , thenBy
+        , using
         , empty
         , singleton
         , fromList
@@ -32,7 +33,7 @@ been shown to work well in real-world situations.
 
 # Definition
 
-@docs Heap, Options, smallest, biggest, by, thenBy
+@docs Heap, Options, smallest, biggest, by, thenBy, using
 
 
 # Creating heaps
@@ -137,8 +138,9 @@ biggest =
         }
 
 
-{-| `by someFunction` tells the heap to sort  by comparing values with
-the given function. This may commonly be a property of a record:
+{-| `by someFunction` tells the heap to  sort by comparing values with the given
+function. This may commonly be a property  of a record, and allows you to create
+heaps of non-comparable types:
 
     Heap.singleton (biggest |> by .yearOfBirth)
         { firstName = "Buzz"
@@ -175,6 +177,25 @@ thenBy hash (Options options) =
     Options
         { options
             | compare = options.compare |> ifEQ (makeCompare hash)
+        }
+
+
+{-| `using  customCompareFunction` allows you  to provide a custom  function for
+comparing elements.
+
+    compareFunctions : (Int -> Int -> Int) -> (Int -> Int -> Int) -> Order
+    compareFunctions a b =
+        Basics.compare (a 2 1) (b 2 1)
+
+    heap : Heap (Int -> Int -> Int)
+    Heap.fromList (smallest |> using compareFunctions)
+        [(+), (-), (*)]
+-}
+using : (a -> a -> Order) -> Options b -> Options a
+using compareFn (Options options) =
+    Options
+        { options
+            | compare = compareFn
         }
 
 

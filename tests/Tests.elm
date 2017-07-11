@@ -3,7 +3,7 @@ module Tests exposing (..)
 import Test exposing (..)
 import Expect
 import Fuzz exposing (Fuzzer, list, int, tuple)
-import Heap exposing (Heap, smallest, biggest, by, thenBy)
+import Heap exposing (Heap, smallest, biggest, by, thenBy, using)
 
 
 type BasicUnion
@@ -75,7 +75,7 @@ all =
                 ]
             ]
         , describe "Non-comparable values"
-            [ fuzz (tuple ( list int, list int )) "Can create heaps of non-comparable values with cutom hashing function" <|
+            [ fuzz (tuple ( list int, list int )) "Can create heaps of non-comparable values with custom hashing function" <|
                 \( xs, ys ) ->
                     let
                         hashingFn =
@@ -104,6 +104,18 @@ all =
                             |> Heap.peek
                             |> Maybe.andThen (.list >> List.maximum)
                             |> Expect.equal (Maybe.map2 min (List.maximum xs) (List.maximum ys))
+            , test "Can create heaps of non-comparable values with custom compare function" <|
+                \() ->
+                    let
+                        closestToZero : (Int -> Int -> Int) -> (Int -> Int -> Int) -> Basics.Order
+                        closestToZero a b =
+                            compare (abs <| a 1 2) (abs <| b 1 2)
+                    in
+                        [ (+), (-), (*) ]
+                            |> Heap.fromList (smallest |> using closestToZero)
+                            |> Heap.peek
+                            |> Maybe.map (\fn -> fn 1 2)
+                            |> Expect.equal (Just -1)
             , fuzz (tuple ( list union, list union )) "Can merge heaps of non-comparable values" <|
                 \( xs, ys ) ->
                     let
