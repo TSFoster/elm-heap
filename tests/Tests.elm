@@ -139,4 +139,8 @@ all =
                         |> Heap.peek
                         |> Expect.equal (List.maximum ints)
             ]
+        , describe "Duplicate values"
+            [ test "Duplicate values are preserved" <|
+                \() -> Expect.equal (Heap.toList (Heap.fromList smallest [ 1, 2, 1, 3 ])) [ 1, 1, 2, 3 ]
+            ]
         ]
