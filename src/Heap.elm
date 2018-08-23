@@ -1,33 +1,17 @@
-module Heap
-    exposing
-        ( Heap
-        , Options
-        , smallest
-        , biggest
-        , by
-        , thenBy
-        , using
-        , empty
-        , singleton
-        , fromList
-        , isEmpty
-        , size
-        , peek
-        , push
-        , pop
-        , popBlind
-        , mergeInto
-        , toList
-        , toListReverse
-        , toListUnordered
-        )
+module Heap exposing
+    ( Heap, Options, smallest, biggest, by, thenBy, using
+    , empty, singleton, fromList
+    , push, mergeInto, pop, popBlind
+    , isEmpty, size, peek
+    , toList, toListReverse, toListUnordered
+    )
 
 {-| Data structure for heaps.
 
-This package  exposes a data  structure to implement  heaps/priority queues/fast
+This package exposes a data structure to implement heaps/priority queues/fast
 in-place sorting.
 
-The heap  is implemented as a  pairing heap, as it  is simple but fast,  and has
+The heap is implemented as a pairing heap, as it is simple but fast, and has
 been shown to work well in real-world situations.
 
 
@@ -58,19 +42,18 @@ been shown to work well in real-world situations.
 
 # Running times
 
-* peek: **Θ(1)**
-* pop: **O(log n) (amortized)**
-* push: **Θ(1)**
-* size: **Θ(1)**
-* mergeInto: **Θ(1)**
+  - peek: **Θ(1)**
+  - pop: **O(log n) (amortized)**
+  - push: **Θ(1)**
+  - size: **Θ(1)**
+  - mergeInto: **Θ(1)**
 
 -}
 
 
-{-| A  heap `Heap  a` takes values  of type `a`,  keeping them  loosely ordered.
+{-| A heap `Heap  a` takes values of type `a`, keeping them loosely ordered.
 Values can be very quickly added, and, depending on the type of heap, either the
 "smallest" or "biggest" value can be quickly recalled or removed.
-
 -}
 type Heap a
     = Heap (Model a)
@@ -94,10 +77,9 @@ type SortOrder
     | MaxFirst
 
 
-{-| When creating a  new heap `Heap a`, `Options a` must  be provided. They will
-determine whether the heap keeps the  "smallest" or "biggest" value to hand, and
+{-| When creating a new heap `Heap a`, `Options a` must be provided. They will
+determine whether the heap keeps the "smallest" or "biggest" value to hand, and
 how it determines how small or big the value is.
-
 -}
 type Options a
     = Options
@@ -138,8 +120,8 @@ biggest =
         }
 
 
-{-| `by someFunction` tells the heap to  sort by comparing values with the given
-function. This may commonly be a property  of a record, and allows you to create
+{-| `by someFunction` tells the heap to sort by comparing values with the given
+function. This may commonly be a property of a record, and allows you to create
 heaps of non-comparable types:
 
     Heap.singleton (biggest |> by .yearOfBirth)
@@ -155,14 +137,14 @@ heaps of non-comparable types:
 
 -}
 by : (a -> comparable) -> Options b -> Options a
-by hash (Options options) =
+by hash (Options oldOptions) =
     Options
-        { options
-            | compare = makeCompare hash
+        { order = oldOptions.order
+        , compare = makeCompare hash
         }
 
 
-{-| `thenBy  someFunction` tells the heap  to use the given  function to compare
+{-| `thenBy  someFunction` tells the heap to use the given function to compare
 values, if it cannot otherwise differentiate between two values.
 
     Heap.singleton (smallest |> by .lastName |> thenBy .firstName)
@@ -180,7 +162,7 @@ thenBy hash (Options options) =
         }
 
 
-{-| `using  customCompareFunction` allows you  to provide a custom  function for
+{-| `using  customCompareFunction` allows you to provide a custom function for
 comparing elements.
 
     compareFunctions : (Int -> Int -> Int) -> (Int -> Int -> Int) -> Order
@@ -190,12 +172,13 @@ comparing elements.
     heap : Heap (Int -> Int -> Int)
     Heap.fromList (smallest |> using compareFunctions)
         [(+), (-), (*)]
+
 -}
 using : (a -> a -> Order) -> Options b -> Options a
-using compareFn (Options options) =
+using compareFn (Options oldOptions) =
     Options
-        { options
-            | compare = compareFn
+        { order = oldOptions.order
+        , compare = compareFn
         }
 
 
@@ -273,8 +256,8 @@ fromList =
 
 -}
 isEmpty : Heap a -> Bool
-isEmpty (Heap { size }) =
-    size == 0
+isEmpty (Heap a) =
+    a.size == 0
 
 
 {-| Number of elements in heap.
@@ -331,7 +314,7 @@ push a (Heap heap) =
     mergeInto (Heap heap) (Heap { heap | structure = Branch a [], size = 1 })
 
 
-{-| Try to remove the top value  from the heap, returning the value and the
+{-| Try to remove the top value from the heap, returning the value and the
 new heap. If the heap is empty, return Nothing.
 
     >>> Heap.pop (Heap.empty biggest)
@@ -405,6 +388,7 @@ mergeInto (Heap heap) (Heap toMerge) =
                                 | structure = Branch elem1 (toMerge.structure :: subheap1)
                                 , size = heap.size + toMerge.size
                             }
+
                         else
                             { heap
                                 | structure = Branch elem2 (heap.structure :: subheap2)
@@ -427,6 +411,7 @@ toList =
 
     >>> Heap.toListReverse (Heap.fromList smallest [ 9, 3, 6, 4, 1, 2, 8, 5, 7 ])
     [ 9, 8, 7, 6, 5, 4, 3, 2, 1 ]
+
 -}
 toListReverse : Heap a -> List a
 toListReverse =
@@ -439,11 +424,10 @@ toListReverse =
                 Just ( el, subheap ) ->
                     toListHelper (el :: popped) subheap
     in
-        toListHelper []
+    toListHelper []
 
 
 {-| Get all values out as fast as possible, regardless of order
-
 -}
 toListUnordered : Heap a -> List a
 toListUnordered (Heap { structure }) =
@@ -476,7 +460,7 @@ mergePairs heap nodes =
                         (mergeInto (Heap { heap | structure = node1 }) (Heap { heap | structure = node2 }))
                         (Heap { heap | structure = mergePairs heap rest })
             in
-                structure
+            structure
 
 
 makeReversible : (a -> a -> Order) -> (SortOrder -> a -> a -> Order)
@@ -513,7 +497,8 @@ ifEQ second first a b =
         firstComparison =
             first a b
     in
-        if firstComparison == EQ then
-            second a b
-        else
-            firstComparison
+    if firstComparison == EQ then
+        second a b
+
+    else
+        firstComparison
