@@ -1,9 +1,9 @@
-module Tests exposing (..)
+module Tests exposing (BasicUnion(..), all, intFromUnion, union)
 
-import Test exposing (..)
 import Expect
-import Fuzz exposing (Fuzzer, list, int, tuple)
-import Heap exposing (Heap, smallest, biggest, by, thenBy, using)
+import Fuzz exposing (Fuzzer, int, list, tuple)
+import Heap exposing (Heap, biggest, by, smallest, thenBy, using)
+import Test exposing (..)
 
 
 type BasicUnion
@@ -81,29 +81,30 @@ all =
                         hashingFn =
                             .list >> List.sum
                     in
-                        Heap.singleton (smallest |> by hashingFn) { list = xs }
-                            |> Heap.push { list = ys }
-                            |> Heap.peek
-                            |> Maybe.map (.list >> List.sum)
-                            |> Expect.equal (Just <| min (List.sum xs) (List.sum ys))
+                    Heap.singleton (smallest |> by hashingFn) { list = xs }
+                        |> Heap.push { list = ys }
+                        |> Heap.peek
+                        |> Maybe.map (.list >> List.sum)
+                        |> Expect.equal (Just <| min (List.sum xs) (List.sum ys))
             , fuzz (tuple ( list int, list int )) "Can create heaps of non-comparable values with two custom hashing functions" <|
                 \( xs, ys ) ->
                     let
                         hash a =
                             if List.isEmpty a.list then
                                 0
+
                             else
                                 1
 
                         hash2 a =
                             List.maximum a.list |> Maybe.withDefault 0
                     in
-                        Heap.empty (smallest |> by hash |> thenBy hash2)
-                            |> Heap.push { list = xs }
-                            |> Heap.push { list = ys }
-                            |> Heap.peek
-                            |> Maybe.andThen (.list >> List.maximum)
-                            |> Expect.equal (Maybe.map2 min (List.maximum xs) (List.maximum ys))
+                    Heap.empty (smallest |> by hash |> thenBy hash2)
+                        |> Heap.push { list = xs }
+                        |> Heap.push { list = ys }
+                        |> Heap.peek
+                        |> Maybe.andThen (.list >> List.maximum)
+                        |> Expect.equal (Maybe.map2 min (List.maximum xs) (List.maximum ys))
             , test "Can create heaps of non-comparable values with custom compare function" <|
                 \() ->
                     let
@@ -111,21 +112,21 @@ all =
                         closestToZero a b =
                             compare (abs <| a 1 2) (abs <| b 1 2)
                     in
-                        [ (+), (-), (*) ]
-                            |> Heap.fromList (smallest |> using closestToZero)
-                            |> Heap.peek
-                            |> Maybe.map (\fn -> fn 1 2)
-                            |> Expect.equal (Just -1)
+                    [ (+), (-), (*) ]
+                        |> Heap.fromList (smallest |> using closestToZero)
+                        |> Heap.peek
+                        |> Maybe.map (\fn -> fn 1 2)
+                        |> Expect.equal (Just -1)
             , fuzz (tuple ( list union, list union )) "Can merge heaps of non-comparable values" <|
                 \( xs, ys ) ->
                     let
                         opts =
                             smallest |> by intFromUnion
                     in
-                        List.foldl Heap.push (Heap.empty opts) xs
-                            |> Heap.mergeInto (Heap.fromList opts ys)
-                            |> Heap.toList
-                            |> Expect.equal (List.sortBy intFromUnion (xs ++ ys))
+                    List.foldl Heap.push (Heap.empty opts) xs
+                        |> Heap.mergeInto (Heap.fromList opts ys)
+                        |> Heap.toList
+                        |> Expect.equal (List.sortBy intFromUnion (xs ++ ys))
             ]
         , describe "Max heaps"
             [ fuzz (list int) "Max heaps produce the reverse of Min heaps" <|
