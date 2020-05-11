@@ -144,4 +144,10 @@ all =
             [ test "Duplicate values are preserved" <|
                 \() -> Expect.equal (Heap.toList (Heap.fromList smallest [ 1, 2, 1, 3 ])) [ 1, 1, 2, 3 ]
             ]
+        , describe "Tail recursion"
+            [ test "toListUnordered is tail recursive" <|
+                \() -> Expect.equal (List.length <| Heap.toListUnordered (Heap.fromList biggest (List.range 1 100000))) 100000
+            , test "toList is tail recursive" <|
+                \() -> Expect.equal (List.length <| Heap.toList (Heap.fromList biggest (List.range 1 100000))) 100000
+            ]
         ]
