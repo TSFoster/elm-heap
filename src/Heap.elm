@@ -431,17 +431,30 @@ toListReverse =
 -}
 toListUnordered : Heap a -> List a
 toListUnordered (Heap { structure }) =
-    flattenStructure structure
+    flattenStructure [] [] [ structure ]
 
 
-flattenStructure : Node a -> List a
-flattenStructure nodes =
+
+-- This uses a strange method for memoizing, so as to 1) tail optimize, and 2)
+-- avoid traversing lists multiple times
+
+
+flattenStructure : List a -> List (List (Node a)) -> List (Node a) -> List a
+flattenStructure flat remaining nodes =
     case nodes of
-        Leaf ->
-            []
+        [] ->
+            case remaining of
+                [] ->
+                    flat
 
-        Branch a rest ->
-            a :: List.concat (List.map flattenStructure rest)
+                list :: rest ->
+                    flattenStructure flat rest list
+
+        Leaf :: rest ->
+            flattenStructure flat remaining rest
+
+        (Branch a children) :: rest ->
+            flattenStructure (a :: flat) (children :: remaining) rest
 
 
 mergePairs : Model a -> List (Node a) -> Node a
