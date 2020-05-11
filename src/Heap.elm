@@ -91,9 +91,9 @@ type Options a
 {-| A `smallest` heap is a heap of any comparable type (ints, floats, chars, strings,
 lists, or tuples), which keeps the smallest value to hand.
 
-    >>> Heap.fromList smallest [ 0, 1, 2, 3, 4 ]
-    ...     |> Heap.peek
-    Just 0
+    Heap.fromList smallest [ 0, 1, 2, 3, 4 ]
+        |> Heap.peek
+    --> Just 0
 
 -}
 smallest : Options comparable
@@ -107,9 +107,9 @@ smallest =
 {-| A `biggest` heap is a heap of any comparable type (ints, floats, chars, strings,
 lists, or tuples), which keeps the biggest value to hand.
 
-    >>> Heap.fromList biggest [ 0, 1, 2, 3, 4 ]
-    ...     |> Heap.peek
-    Just 4
+    Heap.fromList biggest [ 0, 1, 2, 3, 4 ]
+        |> Heap.peek
+    --> Just 4
 
 -}
 biggest : Options comparable
@@ -225,20 +225,20 @@ singleton (Options { compare, order }) value =
 
 {-| A heap containing all values in the list, given Heap.Options.
 
-    >>> Heap.fromList (biggest |> by (List.maximum >> Maybe.withDefault -999999))
-    ...     [ [ 1, 999 ]
-    ...     , [ 6, 4, 3, 8, 9, 347, 34, 132, 546 ]
-    ...     ]
-    ...         |> Heap.peek
-    Just [ 1, 999 ]
+    Heap.fromList (biggest |> by (List.maximum >> Maybe.withDefault -999999))
+        [ [ 1, 999 ]
+        , [ 6, 4, 3, 8, 9, 347, 34, 132, 546 ]
+        ]
+        |> Heap.peek
+    --> Just [ 1, 999 ]
 
-    >>> Heap.fromList smallest []
-    ...    |> Heap.size
-    0
+    Heap.fromList smallest []
+       |> Heap.size
+    --> 0
 
-    >>> Heap.fromList smallest [ 8, 3, 8, 3, 6, 67, 23 ]
-    ...    |> Heap.size
-    7
+    Heap.fromList smallest [ 8, 3, 8, 3, 6, 67, 23 ]
+       |> Heap.size
+    --> 7
 
 -}
 fromList : Options a -> List a -> Heap a
@@ -248,11 +248,11 @@ fromList =
 
 {-| `True` if the Heap is empty, otherwise `False`.
 
-    >>> Heap.isEmpty (Heap.empty smallest)
-    True
+    Heap.isEmpty (Heap.empty smallest)
+    --> True
 
-    >>> Heap.isEmpty (Heap.singleton smallest 3)
-    False
+    Heap.isEmpty (Heap.singleton smallest 3)
+    --> False
 
 -}
 isEmpty : Heap a -> Bool
@@ -262,11 +262,11 @@ isEmpty (Heap a) =
 
 {-| Number of elements in heap.
 
-    >>> Heap.size (Heap.empty biggest)
-    0
+    Heap.size (Heap.empty biggest)
+    --> 0
 
-    >>> Heap.size (Heap.fromList biggest [ 1, 2, 3, 4, 5, 6, 7, 8 ])
-    8
+    Heap.size (Heap.fromList biggest [ 1, 2, 3, 4, 5, 6, 7, 8 ])
+    --> 8
 
 -}
 size : Heap a -> Int
@@ -276,14 +276,14 @@ size (Heap h) =
 
 {-| Look at smallest/biggest value in heap without applying any transformations.
 
-    >>> Heap.peek (Heap.empty smallest)
-    Nothing
+    Heap.peek (Heap.empty smallest)
+    --> Nothing
 
-    >>> Heap.peek (Heap.fromList smallest [ 3, 56, 8, 367, 0, 4 ])
-    Just 0
+    Heap.peek (Heap.fromList smallest [ 3, 56, 8, 367, 0, 4 ])
+    --> Just 0
 
-    >>> Heap.peek (Heap.fromList biggest [ 3, 56, 8, 367, 0, 4 ])
-    Just 367
+    Heap.peek (Heap.fromList biggest [ 3, 56, 8, 367, 0, 4 ])
+    --> Just 367
 
 -}
 peek : Heap a -> Maybe a
@@ -298,15 +298,15 @@ peek (Heap { structure }) =
 
 {-| Add a value to a heap.
 
-    >>> Heap.fromList smallest [ 1, 6, 7 ]
-    ...     |> Heap.push 4
-    ...     |> Heap.peek
-    Just 1
+    Heap.fromList smallest [ 1, 6, 7 ]
+        |> Heap.push 4
+        |> Heap.peek
+    --> Just 1
 
-    >>> Heap.fromList smallest [ 5, 6, 7 ]
-    ...     |> Heap.push 4
-    ...     |> Heap.peek
-    Just 4
+    Heap.fromList smallest [ 5, 6, 7 ]
+        |> Heap.push 4
+        |> Heap.peek
+    --> Just 4
 
 -}
 push : a -> Heap a -> Heap a
@@ -317,13 +317,13 @@ push a (Heap heap) =
 {-| Try to remove the top value from the heap, returning the value and the
 new heap. If the heap is empty, return Nothing.
 
-    >>> Heap.pop (Heap.empty biggest)
-    Nothing
+    Heap.pop (Heap.empty biggest)
+    --> Nothing
 
-    >>> Heap.fromList smallest [ 3, 5, 7, 7, 2, 9 ]
-    ...     |> Heap.pop
-    ...     |> Maybe.map (Tuple.mapSecond Heap.size)
-    Just (2, 5)
+    Heap.fromList smallest [ 3, 5, 7, 7, 2, 9 ]
+        |> Heap.pop
+        |> Maybe.map (Tuple.mapSecond Heap.size)
+    --> Just (2, 5)
 
 -}
 pop : Heap a -> Maybe ( a, Heap a )
@@ -339,13 +339,13 @@ pop (Heap heap) =
 {-| Try to remove the top value from the heap, returning just the new heap.
 If the heap is empty, return Nothing.
 
-    >>> Heap.popBlind (Heap.empty smallest)
-    Nothing
+    Heap.popBlind (Heap.empty smallest)
+    --> Nothing
 
-    >>> Heap.singleton smallest 3
-    ...     |> Heap.popBlind
-    ...     |> Maybe.map Heap.size
-    Just 0
+    Heap.singleton smallest 3
+        |> Heap.popBlind
+        |> Maybe.map Heap.size
+    --> Just 0
 
 -}
 popBlind : Heap a -> Maybe (Heap a)
@@ -359,12 +359,12 @@ popBlind =
 Strictly speaking, the merged heap has the same sorting method as the first heap
 given.
 
-    >>> Heap.isEmpty (Heap.mergeInto (Heap.empty smallest) (Heap.empty smallest))
-    True
+    Heap.isEmpty (Heap.mergeInto (Heap.empty smallest) (Heap.empty smallest))
+    --> True
 
-    >>> Heap.mergeInto (Heap.fromList smallest [ 2, 4, 6, 7 ]) (Heap.fromList smallest [ 5, 7, 9, 3 ])
-    ...     |> Heap.size
-    8
+    Heap.mergeInto (Heap.fromList smallest [ 2, 4, 6, 7 ]) (Heap.fromList smallest [ 5, 7, 9, 3 ])
+        |> Heap.size
+    --> 8
 
 -}
 mergeInto : Heap a -> Heap a -> Heap a
@@ -398,8 +398,8 @@ mergeInto (Heap heap) (Heap toMerge) =
 
 {-| Get all values from the heap, in order.
 
-    >>> Heap.toList (Heap.fromList smallest [ 9, 3, 6, 4, 1, 2, 8, 5, 7 ])
-    [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+    Heap.toList (Heap.fromList smallest [ 9, 3, 6, 4, 1, 2, 8, 5, 7 ])
+    --> [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
 
 -}
 toList : Heap a -> List a
@@ -409,8 +409,8 @@ toList =
 
 {-| Get all values from the heap, in reverse order.
 
-    >>> Heap.toListReverse (Heap.fromList smallest [ 9, 3, 6, 4, 1, 2, 8, 5, 7 ])
-    [ 9, 8, 7, 6, 5, 4, 3, 2, 1 ]
+    Heap.toListReverse (Heap.fromList smallest [ 9, 3, 6, 4, 1, 2, 8, 5, 7 ])
+    --> [ 9, 8, 7, 6, 5, 4, 3, 2, 1 ]
 
 -}
 toListReverse : Heap a -> List a

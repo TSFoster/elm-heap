@@ -47,8 +47,8 @@ For full documentation, see [package.elm-lang.org][package-doc].
 ```shell
 git clone https://github.com/TSFoster/elm-heap.git
 cd elm-heap
-elm-test
-npm install elm-doc-test && elm-doc-test && elm-test tests/Doc/Main.elm
+npm install
+npm test
 ```
 
 # License
