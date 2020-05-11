@@ -2,8 +2,8 @@ module Tests exposing (BasicUnion(..), all, intFromUnion, union)
 
 import Expect
 import Fuzz exposing (Fuzzer, int, list, tuple)
-import Heap exposing (Heap, biggest, by, smallest, thenBy, using)
-import Test exposing (..)
+import Heap exposing (biggest, by, smallest, thenBy, using)
+import Test exposing (Test, describe, fuzz, test)
 
 
 type BasicUnion
