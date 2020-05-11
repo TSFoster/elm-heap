@@ -415,16 +415,17 @@ toList =
 -}
 toListReverse : Heap a -> List a
 toListReverse =
-    let
-        toListHelper popped heap =
-            case pop heap of
-                Nothing ->
-                    popped
-
-                Just ( el, subheap ) ->
-                    toListHelper (el :: popped) subheap
-    in
     toListHelper []
+
+
+toListHelper : List a -> Heap a -> List a
+toListHelper popped heap =
+    case pop heap of
+        Nothing ->
+            popped
+
+        Just ( el, subheap ) ->
+            toListHelper (el :: popped) subheap
 
 
 {-| Get all values out as fast as possible, regardless of order
